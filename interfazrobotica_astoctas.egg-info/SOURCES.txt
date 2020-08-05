@@ -1,8 +1,0 @@
-README.md
-setup.py
-interfazrobotica/__init__.py
-interfazrobotica_astoctas.egg-info/PKG-INFO
-interfazrobotica_astoctas.egg-info/SOURCES.txt
-interfazrobotica_astoctas.egg-info/dependency_links.txt
-interfazrobotica_astoctas.egg-info/requires.txt
-interfazrobotica_astoctas.egg-info/top_level.txt
