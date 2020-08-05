@@ -1,0 +1,8 @@
+README.md
+setup.py
+interfazrobotica/__init__.py
+interfazrobotica.egg-info/PKG-INFO
+interfazrobotica.egg-info/SOURCES.txt
+interfazrobotica.egg-info/dependency_links.txt
+interfazrobotica.egg-info/requires.txt
+interfazrobotica.egg-info/top_level.txt
