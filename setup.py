@@ -4,8 +4,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="interfazrobotica", # Replace with your own username
-    version="0.1.0",
+    name="interfaz", # Replace with your own username
+    version="0.1.1",
     author="Alejandro Lavagnino",
     author_email="alejandro.lavagnino@gmail.com",
     description="Funciones para controlar la interfaz",
