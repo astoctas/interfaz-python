@@ -3,6 +3,8 @@ import socketio
 # standard Python
 socket = socketio.Client()
 
+MAX_ANALOG_VALUE = 1023 
+
 __all__ = ["interfaz", "_OUTPUT", "_SERVO", "_ANALOG", "_DIGITAL", "_LCD", "_PING", "_PIXEL", "_I2C", "_DEVICE"];
 
 class _OUTPUT:
@@ -92,12 +94,8 @@ class _ANALOG:
         self.value = 0;
         self.type = "analog";
         self.callback = None;
-        @socket.on('ANALOG_MESSAGE')
-        def onMessage(data):
-            if data['index'] == self.index:
-                if self.callback != None:
-                    self.callback(data['value'])
-                self.value = data['value']
+        self.whenCallbacks = {"high" : None, "low": None};
+        self.threshold = 100;
 
     def get(self):
         """
@@ -106,6 +104,15 @@ class _ANALOG:
         """
         return self.value
 
+
+    def when(self, event, callback):
+        """
+        # when(): sets when callback
+        #
+        # @param event {string} evento to trigger callback: "high", "low"
+        # @param callback {Function} callback function
+        """
+        self.whenCallbacks[event] = callback
 
     def data(self, callback):
         """
@@ -146,12 +153,7 @@ class _DIGITAL:
         self.value = 0;
         self.type = "digital";
         self.callback = None;
-        @socket.on('DIGITAL_MESSAGE')
-        def onMessage(data):
-            if data['index'] == self.index:
-                if self.callback != None:
-                    self.callback(data['value'])
-                self.value = data['value']
+        self.whenCallbacks = {"high" : None, "low": None};
 
     def get(self):
         """
@@ -159,6 +161,15 @@ class _DIGITAL:
         #
         """
         return self.value
+
+    def when(self, event, callback):
+        """
+        # when(): sets when callback
+        #
+        # @param event {string} evento to trigger callback: "high", "low"
+        # @param callback {Function} callback function
+        """
+        self.whenCallbacks[event] = callback
 
 
     def data(self, callback):
@@ -232,13 +243,6 @@ class _PING:
         self.cm = 0
         self.inches = 0
         self.callback = None
-        @socket.on('PING_MESSAGE')
-        def onMessage(data):
-            if data['index'] == self.index:
-                if self.callback != None:
-                    self.callback({"cm": data['cm'],"inches":data['inches']})
-                self.cm = data['cm']
-                self.inches = data['inches']
 
     def getCm(self):
         """
@@ -340,11 +344,6 @@ class _I2C:
     def __init__(self, address):
         self.address = address;
         self.callback = None;
-        @socket.on('I2C_MESSAGE')
-        def onMessage(data):
-            if data['address'] == self.address:
-                if self.callback != None:
-                    self.callback(data)
 
     def data(self, callback):
         """
@@ -442,18 +441,70 @@ class _DEVICE:
         socket.emit('DEVICE_CALL', { "id": self.id, "method": method })
 
 
-class interfaz:
+class _INTERFAZ: 
 
     def __init__(self, address = None):
         if address == None: address = "localhost"
+        @socket.on('ANALOG_MESSAGE')
+        def onMessage(data):
+            a = self._analogs[data['index'] - 1]
+            v = data['value']
+            # DATA CALLBACK
+            if a.callback != None:
+                a.callback(v)
+            for w in ["low", "high"]:
+                if a.whenCallbacks[w] != None:
+                    if w == "low" and v <= a.threshold and a.value > a.threshold: a.whenCallbacks[w]()
+                    if w == "high" and v >= MAX_ANALOG_VALUE - a.threshold and a.value < MAX_ANALOG_VALUE - a.threshold: a.whenCallbacks[w]()
+            a.value = v
+
+        @socket.on('DIGITAL_MESSAGE')
+        def onMessage(data):
+            a = self._digitals[data['index'] - 1]
+            v = data['value']
+            # DATA CALLBACK
+            if a.callback != None:
+                a.callback(vars)
+            for w in ["low", "high"]:
+                if a.whenCallbacks[w] != None:
+                    if w == "low" and v == 0 and a.value == 1: a.whenCallbacks[w]()
+                    if w == "high" and v == 1 and a.value == 0: a.whenCallbacks[w]()
+            a.value = v
+
+
+        @socket.on('PING_MESSAGE')
+        def onMessage(data):
+            a = self._pings[data['index'] - 1]
+            if a.callback != None:
+                a.callback({"cm": data['cm'],"inches":data['inches']})
+            a.cm = data['cm']
+            a.inches = data['inches']
+
+        @socket.on('I2C_MESSAGE')
+        def onMessage(data):
+            a = self._i2c[data['address']]
+            if a.callback != None:
+                a.callback(data)
+
+
+        if socket.connected: 
+            socket.disconnect();
+        socket.connect('http://'+address+':4268')
+
+
+class interfaz(_INTERFAZ):
+
+    def __init__(self, address = None):
         self._analogs = [_ANALOG(1), _ANALOG(2), _ANALOG(3), _ANALOG(4)]
         self._digitals = [_DIGITAL(1), _DIGITAL(2), _DIGITAL(3), _DIGITAL(4)]
         self._pings = [_PING(1), _PING(2), _PING(3), _PING(4)]
         self._outputs = [_OUTPUT(1), _OUTPUT(2), _OUTPUT(3), _OUTPUT(4)]
         self._servos = [_SERVO(1), _SERVO(2)]
         self._pixels = [_PIXEL(1), _PIXEL(2)]
+        self._devices = []
+        self._i2c = []
         self._lcd = _LCD();
-        socket.connect('http://'+address+':4268')
+        super().__init__(address)
 
     def analog(self, index):
         return self._analogs[index - 1]
@@ -477,6 +528,7 @@ class interfaz:
         return self._lcd;
 
     def i2c(self, address):
-        return _I2C(address);
+        self._i2c[address] = _I2C(address)
+        return self._i2c[address]
 
-
+socket.wait()

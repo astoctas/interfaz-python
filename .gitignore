@@ -1,2 +1,8 @@
 build/
 dist/
+interfaz/__pycache__
+test.py
+.idea/
+interfaz.egg-info/
+venv/
+.vscode/

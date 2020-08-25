@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="interfaz", # Replace with your own username
-    version="0.1.1",
+    version="0.2.0",
     author="Alejandro Lavagnino",
     author_email="alejandro.lavagnino@gmail.com",
-    description="Funciones para controlar la interfaz",
+    description="Funciones para controlar la interfaz por sockets",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/astoctas/interfaz-python",
