@@ -1,5 +1,5 @@
 import socketio
-
+import time
 # standard Python
 socket = socketio.Client()
 
@@ -141,10 +141,10 @@ class _ANALOG:
 
 class _DIGITAL:
     """
-    # class Analog
+    # class Digital
     # @constructor
     #
-    # @param index {Integer} analog number
+    # @param index {Integer} digital port number
     #
     """
     def __init__(self, index):
@@ -291,7 +291,7 @@ class _PIXEL:
     # @constructor
     #
     # @param index {Integer} motor number
-    # 
+    #
     """
     def __init__(self, index):
         self.index = index;
@@ -304,7 +304,7 @@ class _PIXEL:
         """
         socket.emit('PIXEL', {"index": self.index, "method": 'create', "param": length, "param2": False, "param3": False })
 
-    def on(self, n = None): 
+    def on(self, n = None):
         """
         # on(): Turns on
         #
@@ -320,7 +320,7 @@ class _PIXEL:
 
     def color(self, color, i):
         """
-        # color(): Change color to strip or pixel 
+        # color(): Change color to strip or pixel
         #
         """
         socket.emit('PIXEL', {"index": self.index, "method": 'color', "param": color, "param2": i, "param3": False })
@@ -339,7 +339,7 @@ class _I2C:
     # @constructor
     #
     # @param address {Integer} device address
-    # 
+    #
     """
     def __init__(self, address):
         self.address = address;
@@ -359,7 +359,7 @@ class _I2C:
         #
         # @param register {Integer} register to read
         # @param bytes {Integer} amount of bytes to read
-        """    
+        """
         socket.emit('I2C', { "address": self.address, "register": register, "method": 'on', "param": bytes })
 
     def off(self, register):
@@ -375,7 +375,7 @@ class _I2C:
         #
         # @param register {Integer} register to read
         # @param bytes {Integer} amount of bytes to read
-        """    
+        """
         socket.emit('I2C', { "address": self.address, "register": register, "method": 'read', "param": bytes });
 
     def write(self, register, data):
@@ -384,9 +384,9 @@ class _I2C:
         #
         # @param register {Integer} register to read
         # @param data {Integer} data to write
-        """    
+        """
         socket.emit('I2C', { "address": self.address, "register": register, "method": 'write', "param": data });
-  
+
 
 class _DEVICE:
     """
@@ -397,9 +397,9 @@ class _DEVICE:
     # @this .options {Object} Options to pass as parameters of class
     #
     # example:
-    #      light = new Device('Light', { controller: "BH1750"}); 
+    #      light = new Device('Light', { controller: "BH1750"});
     #      led = new Device('Led', { pin: 13});
-    """  
+    """
 
     def __init__(self, device, options):
         self.device = device;
@@ -419,10 +419,10 @@ class _DEVICE:
         # @param event {String} Event to listen
         # @param attributes {Object} Attributes to receive from device
         # @param callback {myCallback} Callback to execute on data received
-        # 
+        #
         # example:
         #  gps.on("change", ["latitude","longitude"] , function(d) { console.log(d) });
-        """  
+        """
         socket.emit('DEVICE_EVENT', { "id": self.id, "event": event, "attributes": attributes})
         if callback != None:
             @socket.on(event + self.id)
@@ -434,14 +434,64 @@ class _DEVICE:
         # Call(): Call method on device
         #
         # @param method {String} method to run with parenthesis and parameters
-        # 
+        #
         # example:
         #    led.call('on(10)');
-        """  
+        """
         socket.emit('DEVICE_CALL', { "id": self.id, "method": method })
 
+class _JOYSTICK:
+    """
+    # class Joystick
+    # @constructor
+    #
+    # @param index {Integer} digital port number
+    #
+    """
+    def __init__(self, index):
+        self.index = index
+        self.status = 0;
+        self.value = None
+        self.callback = None
+        self.whenCallbacks = {"high" : None, "low": None};
 
-class _INTERFAZ: 
+    def get(self):
+        """
+        # value(): returns joystick values
+        #
+        """
+        return self.value
+
+    def when(self, event, callback):
+        """
+        # when(): sets when callback
+        #
+        # @param event {string} evento to trigger callback: "high", "low"
+        # @param callback {Function} callback function
+        """
+        self.whenCallbacks[event] = callback
+
+
+    def data(self, callback):
+        """
+        # data(): sets data callback
+        #
+        # @param callback {Function} callback function
+        """
+        self.callback = callback
+
+    def on(self):
+        """
+        # On(): Turns reporting on
+        #
+        """
+        self.status = 1;
+        socket.emit('I2CJOYSTICK', { "index": self.index, "method": 'on' });
+
+
+
+
+class _INTERFAZ:
 
     def __init__(self, address = None):
         if address == None: address = "localhost"
@@ -476,7 +526,7 @@ class _INTERFAZ:
         def onMessage(data):
             a = self._pings[data['index'] - 1]
             if a.callback != None:
-                a.callback({"cm": data['cm'],"inches":data['inches']})
+                a.callback({"cm": data["cm"], "inches": data["inches"]})
             a.cm = data['cm']
             a.inches = data['inches']
 
@@ -486,25 +536,16 @@ class _INTERFAZ:
             if a.callback != None:
                 a.callback(data)
 
+        @socket.on('I2CJOYSTICK_MESSAGE')
+        def onMessage(data):
+            a = self._joystick
+            if a.callback != None:
+                a.callback(data)
+            a.value = data
 
-        if socket.connected: 
+        if socket.connected:
             socket.disconnect();
-        socket.connect('http://'+address+':4268')
-
-
-class interfaz(_INTERFAZ):
-
-    def __init__(self, address = None):
-        self._analogs = [_ANALOG(1), _ANALOG(2), _ANALOG(3), _ANALOG(4)]
-        self._digitals = [_DIGITAL(1), _DIGITAL(2), _DIGITAL(3), _DIGITAL(4)]
-        self._pings = [_PING(1), _PING(2), _PING(3), _PING(4)]
-        self._outputs = [_OUTPUT(1), _OUTPUT(2), _OUTPUT(3), _OUTPUT(4)]
-        self._servos = [_SERVO(1), _SERVO(2)]
-        self._pixels = [_PIXEL(1), _PIXEL(2)]
-        self._devices = []
-        self._i2c = []
-        self._lcd = _LCD();
-        super().__init__(address)
+        socket.connect('http://'+address+':4268', {}, ["websocket"])
 
     def analog(self, index):
         return self._analogs[index - 1]
@@ -527,8 +568,25 @@ class interfaz(_INTERFAZ):
     def lcd(self):
         return self._lcd;
 
+    def joystick(self):
+        return self._joystick;
+
     def i2c(self, address):
         self._i2c[address] = _I2C(address)
         return self._i2c[address]
 
-socket.wait()
+
+class interfaz(_INTERFAZ):
+
+    def __init__(self, address = None):
+        self._analogs = [_ANALOG(1), _ANALOG(2), _ANALOG(3), _ANALOG(4)]
+        self._digitals = [_DIGITAL(1), _DIGITAL(2), _DIGITAL(3), _DIGITAL(4)]
+        self._pings = [_PING(1), _PING(2), _PING(3), _PING(4)]
+        self._outputs = [_OUTPUT(1), _OUTPUT(2), _OUTPUT(3), _OUTPUT(4)]
+        self._servos = [_SERVO(1), _SERVO(2)]
+        self._pixels = [_PIXEL(1), _PIXEL(2)]
+        self._devices = []
+        self._joystick = _JOYSTICK(1)
+        self._i2c = []
+        self._lcd = _LCD();
+        super().__init__(address)
