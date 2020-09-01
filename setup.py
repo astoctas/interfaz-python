@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="interfaz", # Replace with your own username
-    version="0.2.0",
+    version="0.2.1",
     author="Alejandro Lavagnino",
     author_email="alejandro.lavagnino@gmail.com",
     description="Funciones para controlar la interfaz por sockets",
