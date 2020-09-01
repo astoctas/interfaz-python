@@ -493,8 +493,7 @@ class _JOYSTICK:
 
 class _INTERFAZ:
 
-    def __init__(self, address = None):
-        if address == None: address = "localhost"
+    def __init__(self, address = "localhost"):
         @socket.on('ANALOG_MESSAGE')
         def onMessage(data):
             a = self._analogs[data['index'] - 1]
@@ -514,7 +513,7 @@ class _INTERFAZ:
             v = data['value']
             # DATA CALLBACK
             if a.callback != None:
-                a.callback(vars)
+                a.callback(v)
             for w in ["low", "high"]:
                 if a.whenCallbacks[w] != None:
                     if w == "low" and v == 0 and a.value == 1: a.whenCallbacks[w]()
@@ -545,25 +544,37 @@ class _INTERFAZ:
 
         if socket.connected:
             socket.disconnect();
-        socket.connect('http://'+address+':4268', {}, ["websocket"])
+        socket.connect('http://'+address+':4268')
 
-    def analog(self, index):
-        return self._analogs[index - 1]
+    def sensor(self, port):
+        if self._analogs_map.index(port) is not None:
+            return self._analogs[self._analogs_map.index(port)]
+        return self._analogs[port - 1]
 
-    def digital(self, index):
-        return self._digitals[index - 1]
+    def digital(self, port):
+        if self._digitals_map.index(port) is not None:
+            return self._digitals[self._digitals_map.index(port)]
+        return self._digitals[port - 1]
 
-    def ping(self, index):
-        return self._pings[index - 1]
+    def ping(self, port):
+        if self._digitals_map.index(port) is not None:
+            return self._pings[self._digitals_map.index(port)]
+        return self._pings[port - 1]
 
-    def output(self, index):
-        return self._outputs[index - 1]
+    def output(self, port):
+        if self._outputs_map.index(port) is not None:
+            return self._outputs[self._outputs_map.index(port)]
+        return self._outputs[port - 1]
 
-    def servo(self, index):
-        return self._servos[index - 1]
+    def servo(self, port):
+        if self._digitals_map.index(port) is not None:
+            return self._servos[self._digitals_map.index(port)]
+        return self._servos[port - 1]
 
-    def pixel(self, index):
-        return self._pixels[index - 1]
+    def pixel(self, port):
+        if self._digitals_map.index(port) is not None:
+            return self._pixels[self._digitals_map.index(port)]
+        return self._pixels[port - 1]
 
     def lcd(self):
         return self._lcd;
@@ -578,7 +589,7 @@ class _INTERFAZ:
 
 class interfaz(_INTERFAZ):
 
-    def __init__(self, address = None):
+    def __init__(self, address = "localhost"):
         self._analogs = [_ANALOG(1), _ANALOG(2), _ANALOG(3), _ANALOG(4)]
         self._digitals = [_DIGITAL(1), _DIGITAL(2), _DIGITAL(3), _DIGITAL(4)]
         self._pings = [_PING(1), _PING(2), _PING(3), _PING(4)]
@@ -590,3 +601,23 @@ class interfaz(_INTERFAZ):
         self._i2c = []
         self._lcd = _LCD();
         super().__init__(address)
+
+class rasti(_INTERFAZ):
+
+    def __init__(self, address = "localhost"):
+        self._analogs = [_ANALOG(1), _ANALOG(2), _ANALOG(3), _ANALOG(4), _ANALOG(5)]
+        self._digitals = [_DIGITAL(1), _DIGITAL(2), _DIGITAL(3), _DIGITAL(4)]
+        self._pings = [_PING(1), _PING(2), _PING(3), _PING(4)]
+        self._outputs = [_OUTPUT(1), _OUTPUT(2)]
+        self._servos = [_SERVO(1), _SERVO(2), _SERVO(3), _SERVO(4)]
+        self._pixels = [_PIXEL(1), _PIXEL(2)]
+        self._devices = []
+        self._joystick = _JOYSTICK(1)
+        self._i2c = []
+        self._lcd = None
+        super().__init__(address)
+
+        self._outputs_map = ["G", "H"];
+        self._analogs_map = ["C", "F", "B", "A", "D"];
+        self._digitals_map = ["F", "C", "A", "B"];
+
