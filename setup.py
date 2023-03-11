@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="interfaz", # Replace with your own username
-    version="0.2.1",
+    version="0.3.0",
     author="Alejandro Lavagnino",
     author_email="alejandro.lavagnino@gmail.com",
     description="Funciones para controlar la interfaz por sockets",
@@ -19,7 +19,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
   install_requires=[            # I get to this in a second
-          'python-socketio'
+          'python-socketio',
+          'websocket-client',
+          'requests'
       ],    
     python_requires='>=3.3',
 )
